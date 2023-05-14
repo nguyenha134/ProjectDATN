@@ -9,10 +9,13 @@ import base64
 from PIL import Image
 import io
 import torch
+import os
 import torchvision.transforms as transforms
+from model import *
 
 def base64_to_tensor(base64_string):
     # Giải mã chuỗi Base64 thành dữ liệu byte
+    base64_string = base64_string.replace("data:image/png;base64,", "")
     image_data = base64.b64decode(base64_string)
 
     # Đọc dữ liệu ảnh từ dữ liệu byte
@@ -25,7 +28,7 @@ def base64_to_tensor(base64_string):
     ])
     tensor = transform(image)
 
-    return tensor
+    return tensor.unsqueeze(0)
 
 def tensor_to_base64(tensor):
     # Chuẩn hóa dữ liệu trong tensor (nếu cần)
@@ -50,7 +53,12 @@ app = Flask(__name__)
 app.debug = True
 CORS(app)
 
-model = torch.load("model/gen.pth")
+GEN_FOLDER = 'model/gennew.pth.tar'
+
+model = Generator(in_channels=3)
+checkpoint = torch.load(GEN_FOLDER,map_location=torch.device('cpu'))
+model.load_state_dict(checkpoint["state_dict"])
+model.eval()
 @app.route("/")
 def hello_world():
     return "<p>Hello, World!</p>"
@@ -59,7 +67,7 @@ def hello_world():
 def predict():
     base64 = request.json.get("image", None)
     image = base64_to_tensor(base64)
-    predict = model.predict(image)
+    predict = model(image)
     res = {
         "image": str(tensor_to_base64(predict))
     }
