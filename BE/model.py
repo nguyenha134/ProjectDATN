@@ -1,16 +1,15 @@
 import torch
 from torch import nn
 
-
 class ConvBlock(nn.Module):
     def __init__(
         self,
-        in_channels, # C*W*H ví dụ image rgb có C = 3 
-        out_channels, # có bao nhiêu kernel để học 
+        in_channels, 
+        out_channels,  
         discriminator=False,
-        use_act=True, # active
-        use_bn=True,  # batchnorm
-        **kwargs, #key arguments: đối số từ khoá
+        use_act=True, 
+        use_bn=True,  
+        **kwargs, 
     ):
         super().__init__()
         self.use_act = use_act
@@ -30,15 +29,14 @@ class UpsampleBlock(nn.Module):
     def __init__(self, in_c, scale_factor):
         super().__init__()
         self.conv = nn.Conv2d(in_c, in_c * scale_factor ** 2, 3, 1, 1)
-        self.ps = nn.PixelShuffle(scale_factor)  # in_c * 4, H, W --> in_c, H*2, W*2
+        self.ps = nn.PixelShuffle(scale_factor)  
         self.act = nn.PReLU(num_parameters=in_c)
 
     def forward(self, x):
         return self.act(self.ps(self.conv(x)))
 
 class MultiScaleStripAttn(nn.Module):
-    def __init__(self,
-                 channels):
+    def __init__(self, channels):
         super(MultiScaleStripAttn, self).__init__()
         self.dwconv = nn.Conv2d(
             in_channels=channels,
@@ -133,7 +131,7 @@ class ResidualBlock(nn.Module):
     def forward(self, x):
         out = self.block1(x)
         out = self.block2(out)
-        return out + x # skip connection tránh mất mát dữ liệu
+        return out + x 
 
 
 class Generator(nn.Module):
@@ -142,11 +140,7 @@ class Generator(nn.Module):
         self.initial = ConvBlock(in_channels, num_channels, kernel_size=9, stride=1, padding=4, use_bn=False)
         self.residuals1 = nn.Sequential(*[MultiScaleStripAttn(num_channels) for _ in range(num_blocks)])
         self.residuals2 = nn.Sequential(*[MultiScaleStripAttn(num_channels) for _ in range(num_blocks)])
-        # arr = [] 
-        # for _ in range(num_block):
-        #   arr.append(ResidualBlock(num_channels))
-        # *[1,2] => 1,2
-        # *arr =>
+
         self.convblock = ConvBlock(num_channels, num_channels, kernel_size=3, stride=1, padding=1, use_act=False)
         self.upsamples = nn.Sequential(UpsampleBlock(num_channels, 2), UpsampleBlock(num_channels, 2))
         self.final = nn.Conv2d(num_channels, in_channels, kernel_size=9, stride=1, padding=4)

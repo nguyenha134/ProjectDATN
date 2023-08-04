@@ -1,8 +1,6 @@
 import { message } from "antd";
 import axios from "axios";
 
-
-
 export async function postRequest(url: string, body: object) {
     try {
         let response = await axios.post(import.meta.env.VITE_APP_BASE_URL + url, body, generateRequestHeader());
@@ -12,6 +10,7 @@ export async function postRequest(url: string, body: object) {
         throw error;
     }
 }
+
 export async function getRequest(url: string) {
     try {
         let response = await axios.get(
